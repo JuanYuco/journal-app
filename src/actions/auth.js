@@ -1,17 +1,20 @@
-import { googleAuthProvider, getAuth, signInWithPopup, createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword } from "../firebase/firebaseConfig";
+import { googleAuthProvider, getAuth, signInWithPopup, createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword, signOut } from "../firebase/firebaseConfig";
 import { types } from "../types/types";
+import { finishLoading, startLoading } from "./ui";
+import Swal from 'sweetalert2';
 
 export const startLoginEmailPassword = ( email, password ) => {
     return (dispatch) => {
-        setTimeout(() => {
-            signInWithEmailAndPassword( getAuth(), email, password )
-                .then( ({ user }) => {
-                    dispatch( login( user.uid, user.displayName ) )
-                })
-                .catch( e => {
-                    console.log(e);
-                })
-        }, 3500);
+        dispatch( startLoading() );
+        signInWithEmailAndPassword( getAuth(), email, password )
+            .then( ({ user }) => {
+                dispatch( login( user.uid, user.displayName ) );
+                dispatch( finishLoading() );
+            })
+            .catch( e => {
+                Swal.fire( 'Error', e.message, 'error' );
+                dispatch( finishLoading() );
+            });
     }
 }
 
@@ -26,7 +29,7 @@ export const startRegisterWithEmailPassword = ( email, password, name ) => {
                 );
             })
             .catch( e => {
-                console.log(e);
+                Swal.fire( 'Error', e.message, 'error' );
             });
     }
 }
@@ -49,3 +52,14 @@ export const login = (uid, displayName) => (
         }
     }
 );
+
+export const startLogout = () => {
+    return async ( dispatch ) => {
+        await signOut( getAuth() );
+        dispatch( logout() );
+    }
+}
+
+export const logout = () => ({
+    type: types.logout
+});
