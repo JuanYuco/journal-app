@@ -1,7 +1,9 @@
 
-import { db, addDoc, collection, doc, updateDoc } from "../firebase/firebaseConfig";
+import { db, addDoc, collection, doc, updateDoc, deleteDoc } from "../firebase/firebaseConfig";
 import { loadNotes } from "../helpers/loadNotes";
 import { types } from "../types/types";
+import Swal from 'sweetalert2'
+import { fileUpload } from "../helpers/fileUpload";
 
 export const startNewNote = () => {
     return async ( dispatch, getState ) => {
@@ -14,6 +16,7 @@ export const startNewNote = () => {
 
         const doc = await addDoc( collection( db, `${ uid }/journal/notes` ), newNote );
         dispatch( activeNote( doc.id, newNote ) );
+        dispatch( addNewNote( doc.id, newNote ) );
     }
 }
 
@@ -22,6 +25,13 @@ export const activeNote = (id, note ) => ({
     payload: {
         id,
         ...note
+    }
+});
+
+export const addNewNote = (id,note) => ({
+    type: types.notesAddNew,
+    payload: {
+        id, ...note
     }
 });
 
@@ -48,5 +58,51 @@ export const startSaveNote = ( note ) => {
         delete noteToFirestore.id;
         const docrRef = await doc( db, `${ uid }/journal/notes/${ note.id }` );
         await updateDoc( docrRef, noteToFirestore );
+        dispatch( refreshNote( note.id, note ) );
+        Swal.fire('Saved', note.title, 'success');
     }
 }
+
+export const refreshNote = ( id, note ) => ({
+    type: types.notesUpdated,
+    payload: {
+        id, note: { id, ...note }
+    }
+});
+
+export const startUploading = ( file ) => {
+    return async ( dispatch, getState ) => {
+        const { active:activeNote } = getState().notes;
+        Swal.fire({
+            title: 'Uploading...',
+            text: 'Please wait...',
+            allowOutsideClick: false,
+            onBeforeOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        const fileUrl = await fileUpload( file );
+        activeNote.url = fileUrl;
+        dispatch( startSaveNote( activeNote ) );
+        Swal.close();
+    }
+}
+
+export const startDeleting = ( id ) => {
+    return async ( dispatch, getState ) => {
+        const uid = getState().auth.uid;
+        const docRef = await doc( db, `${ uid }/journal/notes/${ id }` );
+        await deleteDoc( docRef );
+        dispatch( deleteNote( id ) );
+    }
+}
+
+export const deleteNote = (id) => ({
+    type: types.notesDelete,
+    payload: id
+});
+
+export const notesLogout = () => ({
+    type: types.notesLogoutCleaning
+})

@@ -2,6 +2,7 @@ import { googleAuthProvider, getAuth, signInWithPopup, createUserWithEmailAndPas
 import { types } from "../types/types";
 import { finishLoading, startLoading } from "./ui";
 import Swal from 'sweetalert2';
+import { notesLogout } from "./notes";
 
 export const startLoginEmailPassword = ( email, password ) => {
     return (dispatch) => {
@@ -57,6 +58,7 @@ export const startLogout = () => {
     return async ( dispatch ) => {
         await signOut( getAuth() );
         dispatch( logout() );
+        dispatch( notesLogout() );
     }
 }
 
